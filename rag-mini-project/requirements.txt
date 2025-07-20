@@ -1,0 +1,12 @@
+# Add your Python dependencies here
+fastapi
+uvicorn
+qdrant-client
+sentence-transformers
+streamlit
+openai
+python-dotenv
+requests
+nltk
+python-multipart
+
