@@ -1,23 +1,4 @@
 # Add your Python dependencies here
-'''fastapi
-uvicorn
-qdrant-client
-sentence-transformers
-streamlit
-openai
-python-dotenv
-requests
-nltk
-python-multipart
-chonkie
-python-docx 
-openpyxl 
-PyMuPDF 
-beautifulsoup4 
-pandas 
-python-pptx 
-unstructured
-python-docx'''
 fastapi==0.116.1
 uvicorn[standard]==0.35.0
 python-dotenv==1.1.1
