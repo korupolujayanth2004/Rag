@@ -1,20 +1,18 @@
 # Add your Python dependencies here
 fastapi
-uvicorn
+uvicorn[standard]
 qdrant-client
 sentence-transformers
-streamlit
 openai
 python-dotenv
 requests
 nltk
 python-multipart
 chonkie
-python-docx 
-openpyxl 
-PyMuPDF 
-beautifulsoup4 
-pandas 
-python-pptx 
-unstructured
 python-docx
+openpyxl
+PyMuPDF
+beautifulsoup4
+pandas
+python-pptx
+unstructured
