@@ -1,24 +1,28 @@
-name: Sync to Hugging Face hub
+name: Deploy rag-mini-project to Hugging Face Spaces
 
 on:
+  # Run on pushes to the main branch that change files in the project folder
   push:
-    branches: [main] # Or whatever your default branch is
+    branches: [main]
     paths:
       - 'rag-mini-project/**'
 
-  # To run this workflow manually from the Actions tab
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 jobs:
   sync-to-hub:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      # Step 1: Check out the repository's code
+      - name: Checkout repository
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          lfs: true
-      - name: Push to hub
+
+      # Step 2: Force push the subdirectory to the Hugging Face Space
+      - name: Push to Hugging Face Spaces
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git push https://Jayanthk2004:$HF_TOKEN@huggingface.co/spaces/Jayanthk2004/rag-mini-project main
+          git push https://Jayanthk2004:$HF_TOKEN@huggingface.co/spaces/Jayanthk2004/rag-mini-project `git subtree split --prefix rag-mini-project main`:refs/heads/main --force
