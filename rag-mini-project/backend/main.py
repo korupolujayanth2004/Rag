@@ -90,10 +90,12 @@ async def chat(question: str, session_id: str = ""):
         full_response = ""
         # Call the LLM client to get a streaming response
         for chunk in stream_llm_response(prompt=prompt_for_llm):
-            if chunk.choices and chunk.choices[0].delta.content:
-                token = chunk.choices.delta.content
-                full_response += token
-                yield token # Yield each token as it arrives
+            if chunk.choices and len(chunk.choices) > 0:
+                choice = chunk.choices[0]  # Get the first choice
+                if hasattr(choice, 'delta') and hasattr(choice.delta, 'content') and choice.delta.content:
+                    token = choice.delta.content
+                    full_response += token
+                    yield token # Yield each token as it arrives
         
         # Store the full assistant response in chat history once complete
         store_chat_turn(session_id, "assistant", full_response, turn_number)
