@@ -1,9 +1,12 @@
 FROM python:3.11-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
+# Set environment variables for writable cache directories
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    NLTK_DATA=/tmp/nltk_data \
+    TRANSFORMERS_CACHE=/tmp/transformers_cache \
+    HF_HOME=/tmp/huggingface \
+    PYTHONPATH=/app
 
 # Set work directory
 WORKDIR /app
@@ -15,17 +18,19 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
 
+# Create writable cache directories
+RUN mkdir -p /tmp/nltk_data /tmp/transformers_cache /tmp/huggingface
+
 # Install Python dependencies
 COPY requirements-backend.txt .
 RUN pip install --no-cache-dir -r requirements-backend.txt
 
-# Copy your application code into the container
-# This assumes your main.py is in the root of your rag-mini-project folder
+# Copy your application code
 COPY main.py .
 COPY backend/ ./backend/
 
-# Expose the port the app runs on
-EXPOSE 8000
+# Expose the port
+EXPOSE 7860
 
 # Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
