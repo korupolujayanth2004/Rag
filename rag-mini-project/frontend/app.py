@@ -4,24 +4,33 @@ import requests
 import uuid
 import codecs
 import time
+import os
 
-# === Page Configuration ===
+# = Configuration =
+# Use environment variable for backend URL; fallback to localhost for local development
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
+
+# = Page Configuration =
 st.set_page_config(page_title="📄 Mario's Chat Kingdom", layout="centered")
 st.title("🍄 Chat with Mario 🤖")
 
-# === Session State Initialization ===
+# = Session State Initialization =
 # A unique ID for the current chat session, used to isolate data in the backend
 if "session_id" not in st.session_state:
     st.session_state.session_id = str(uuid.uuid4())
+
 # List to store the history of messages (user and assistant)
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+
 # List to store names of documents uploaded in the current session (for frontend display)
 if "uploaded_doc_names" not in st.session_state:
     st.session_state.uploaded_doc_names = []
+
 # Flag to track if we just reset the session
 if "session_reset" not in st.session_state:
     st.session_state.session_reset = False
+
 # Counter to force file uploader reset
 if "uploader_key" not in st.session_state:
     st.session_state.uploader_key = 0
@@ -33,7 +42,7 @@ def handle_end_chat():
     # Send a request to the FastAPI backend to delete session-specific data from Qdrant
     try:
         with st.spinner(f"🧹 Clearing data for session '{current_session_id}' from database..."):
-            response = requests.post(f"http://localhost:8000/end_session?session_id={current_session_id}")
+            response = requests.post(f"{BACKEND_URL}/end_session?session_id={current_session_id}")
         
         if response.status_code == 200:
             st.success(f"✅ Data for session '{current_session_id}' cleared from database. Wahoo!")
@@ -43,7 +52,7 @@ def handle_end_chat():
         st.error("❌ Mama mia! Could not connect to the backend server. Is it running? (Data might not have been cleared on backend)")
     except Exception as e:
         st.error(f"An unexpected error occurred during backend cleanup: {e}")
-
+    
     # Reset frontend session state for a fresh start
     st.session_state.session_id = str(uuid.uuid4()) # Generate a completely new session ID
     st.session_state.chat_history = []              # Clear chat history
@@ -54,7 +63,7 @@ def handle_end_chat():
     # Rerun the app to update the UI and reflect the cleared state
     st.rerun()
 
-# === Document Upload Section ===
+# = Document Upload Section =
 st.subheader("📄 Upload a Document")
 
 # Use the uploader_key to force widget reset after session reset
@@ -77,7 +86,7 @@ if uploaded_file:
             }
             data = {"session_id": st.session_state.session_id}
             try:
-                upload_response = requests.post("http://localhost:8000/upload_document", files=files, data=data)
+                upload_response = requests.post(f"{BACKEND_URL}/upload_document", files=files, data=data)
                 if upload_response.status_code == 200:
                     st.success(f"✅ Document '{uploaded_file.name}' uploaded and processed. It's-a me, ready!")
                     # Add the document name to the session state for display
@@ -100,42 +109,43 @@ if st.session_state.uploaded_doc_names:
         st.write(f"- 🌟 {doc_name}")
     st.markdown("---")
 
-# === Chat History Display ===
+# = Chat History Display =
 # Iterates through chat_history and displays messages
 for msg in st.session_state.chat_history:
     with st.chat_message(msg["role"]):
         label = "🧑‍💬 **User:**" if msg["role"] == "user" else "🍄 **Mario:**" 
         st.markdown(f"{label} {msg['content']}")
 
-# === Sidebar for Session Management ===
+# = Sidebar for Session Management =
 with st.sidebar:
     st.markdown("### 🔁 Reset Session")
     st.write("Click below to clear all chat history and document data for this session!")
     if st.button("End Chat"):
         handle_end_chat() # Call the function to manage session reset
 
-# === Chat Input Box (Always at the bottom) ===
+# = Chat Input Box (Always at the bottom) =
 question = st.chat_input("Ask Mario something...")
 
-# === Handle User Input and Get LLM Response ===
+# = Handle User Input and Get LLM Response =
 if question:
     # Display user's question immediately
     st.chat_message("user").markdown(f"🧑‍💬 **User:** {question}")
     st.session_state.chat_history.append({"role": "user", "content": question})
-
+    
     with st.chat_message("assistant"):
         with st.spinner("🤖 Mario is thinking... Wahoo!"):
             try:
                 # Make a GET request to the FastAPI /chat endpoint
-                response = requests.get("http://localhost:8000/chat", params={
+                response = requests.get(f"{BACKEND_URL}/chat", params={
                     "question": question,
                     "session_id": st.session_state.session_id
                 }, stream=True, timeout=180) # Increased timeout for potentially longer LLM responses
-
+                
                 # Process the streaming response from the backend
                 decoder = codecs.getincrementaldecoder("utf-8")()
                 full_response = ""
                 placeholder = st.empty() # Placeholder for streaming text
+                
                 for chunk in response.iter_content(chunk_size=1):
                     if chunk:
                         token = decoder.decode(chunk)
@@ -143,11 +153,11 @@ if question:
                         # Update the placeholder with the streamed text and a typing cursor
                         placeholder.markdown(f"🍄 **Mario:** {full_response}▌") 
                         time.sleep(0.02) # Small delay for typing effect
-
+                
                 # Display the final, complete response
                 placeholder.markdown(f"🍄 **Mario:** {full_response}")
                 st.session_state.chat_history.append({"role": "assistant", "content": full_response})
-
+                
             except requests.exceptions.ConnectionError:
                 st.error("❌ Bowser must have cut the connection! Could not connect to the backend server. Is it running?")
             except requests.exceptions.Timeout:
